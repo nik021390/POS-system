@@ -40,7 +40,5 @@ Every completed sale (and trade) is listed at the bottom with timestamp, item, q
 - **Single device.** There's no sync between devices — if you're running two registers, each needs its own upload/export cycle.
 - **No receipts for customers.** This tracks your inventory and revenue; it doesn't generate a customer-facing receipt or invoice.
 
-## Tech notes
-- Single HTML file, vanilla JS, no build step.
-- CSV parsing/export via [PapaParse](https://www.papaparse.com/) (loaded from CDN — needs an internet connection to load the page, but works offline once loaded).
-- Fonts: Space Grotesk, DM Sans, IBM Plex Mono (Google Fonts, also CDN-loaded).
+## Future Improvements / Ideas
+- Analysis dashboard after locking in and exporting CSV (graph visualizations, best/worst selling items, etc.)
