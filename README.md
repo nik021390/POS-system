@@ -17,8 +17,7 @@ The app auto-detects columns by header name, so exact naming isn't required. It 
 | Price | `price`, `cost` |
 | Stock / quantity | `qty`, `quantity`, `stock`, `inventory`, `count` |
 | Category (optional) | `category`, `type`, `collection`, `tag` |
-
-If price or stock columns aren't found, those fields default to `0`. If no category column exists, items are grouped under "Uncategorized" and the category filter row stays hidden until there's more than one category.
+- If price or stock columns aren't found, those fields default to `0`. If no category column exists, items are grouped under "Uncategorized" and the category filter row stays hidden until there's more than one category.
 
 ## Selling
 - **Tap an item card** to add one to the cart. Cards gray out when you're out of stock.
@@ -35,10 +34,11 @@ If price or stock columns aren't found, those fields default to `0`. If no categ
 ## Sales log & payment breakdown
 Every completed sale (and trade) is listed at the bottom with timestamp, item, quantity, payment method, and line total. Below it, a running breakdown per payment method shows total revenue and sale count — Trade's card shows count and total retail value instead of revenue, since trades don't bring in cash.
 
-## Known limitations
-- **No autosave.** Everything lives in the browser tab's memory. If you close or refresh the tab mid-event without exporting, that session's data is gone. Export periodically if you want a safety net, or just re-upload your last exported CSV to pick back up where you left off.
-- **Single device.** There's no sync between devices — if you're running two registers, each needs its own upload/export cycle.
-- **No receipts for customers.** This tracks your inventory and revenue; it doesn't generate a customer-facing receipt or invoice.
+## Limitations
+- **No autosave.** Everything lives in the browser tab's memory. 
+- **Single device.** There's no sync between devices
+- **No receipts for customers.** This tracks your inventory and revenue
+- **Does not verify payments.** This was  intended to be used as a inventory tracker with a POS-style interface. Payments will have to be verified **externally**
 
 ## Future Improvements / Ideas
 - Analysis dashboard after locking in and exporting CSV (graph visualizations, best/worst selling items, etc.)
