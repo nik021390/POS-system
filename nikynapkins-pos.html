@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NikyNapkins POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --paper:#FAFAF7;
+    --paper-dim:#F1EEE6;
+    --ink:#20241A;
+    --ink-soft:#5B6152;
+    --matcha:#5E7C3F;
+    --matcha-dark:#455C2C;
+    --matcha-pale:#E4EBD9;
+    --clay:#E0688A;
+    --clay-pale:#FBE4EB;
+    --line:#D9D4C4;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper-dim);
+    color:var(--ink);
+    font-family:'DM Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:1180px;
+    margin:0 auto;
+    padding:20px 20px 60px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:22px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    background:var(--matcha-pale);
+    padding:3px 8px;
+    border-radius:20px;
+  }
+  .event-input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    background:#fff;
+    color:var(--ink);
+    min-width:180px;
+  }
+  .event-input:focus{outline:2px solid var(--matcha); outline-offset:1px;}
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  button{
+    font-family:'DM Sans', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    border-radius:8px;
+    padding:10px 14px;
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  button:active{transform:translateY(1px);}
+  button:focus-visible{outline:2px solid var(--matcha); outline-offset:2px;}
+  .btn-primary{background:var(--matcha); color:#fff;}
+  .btn-primary:hover{background:var(--matcha-dark);}
+  .btn-primary:disabled{background:#B9C4AA; cursor:not-allowed;}
+  .btn-outline{background:#fff; color:var(--ink); border:1px solid var(--line);}
+  .btn-outline:hover{border-color:var(--matcha);}
+  .btn-clay{background:var(--clay); color:#fff;}
+  .btn-clay:hover{background:#C7527A;}
+  .btn-ghost{background:transparent; color:var(--ink-soft); padding:6px 8px; font-size:12px;}
+
+  .empty-state{
+    background:#fff;
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    padding:48px 24px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .empty-state h2{
+    font-family:'Space Grotesk', sans-serif;
+    color:var(--ink);
+    font-size:18px;
+    margin-bottom:6px;
+  }
+  .empty-state input[type=file]{display:none;}
+  .upload-label{
+    display:inline-block;
+    margin-top:14px;
+    background:var(--matcha);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .upload-label:hover{background:var(--matcha-dark);}
+  .col-hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:10px;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:1fr 340px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:820px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .grid-panel{
+    background:#fff;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    padding:16px;
+  }
+  .panel-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin:0 0 12px;
+  }
+  .item-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+    gap:10px;
+  }
+  .category-pills{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    padding:6px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    font-weight:500;
+  }
+  .pill:hover{border-color:var(--matcha);}
+  .pill.active{
+    background:var(--matcha);
+    border-color:var(--matcha);
+    color:#fff;
+    font-weight:600;
+  }
+  .item-card{
+    position:relative;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 12px 10px;
+    background:var(--paper);
+    cursor:pointer;
+    text-align:left;
+    transition:border-color .1s, box-shadow .1s;
+  }
+  .item-card:hover{border-color:var(--matcha); box-shadow:0 2px 8px rgba(94,124,63,0.12);}
+  .item-card:disabled{opacity:.45; cursor:not-allowed;}
+  .item-card .name{
+    font-weight:600;
+    font-size:13.5px;
+    display:block;
+    margin-bottom:8px;
+    line-height:1.25;
+  }
+  .item-card .meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .item-card .price{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--matcha-dark);
+    font-weight:600;
+    border-bottom:1px dotted var(--matcha-dark);
+    cursor:text;
+  }
+  .item-card .price-input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--matcha-dark);
+    font-weight:600;
+    width:56px;
+    border:1px solid var(--matcha);
+    border-radius:4px;
+    padding:1px 3px;
+    background:#fff;
+  }
+  .item-card .stock{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  .item-card .stock.low{color:var(--clay); font-weight:600;}
+  .cart-badge{
+    position:absolute;
+    top:-7px;
+    right:-7px;
+    background:var(--clay);
+    color:#fff;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    font-weight:600;
+    min-width:20px;
+    height:20px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 5px;
+  }
+
+  /* Receipt tape */
+  .receipt{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:20px;
+  }
+  .receipt-head{
+    padding:16px 18px 10px;
+    border-bottom:1px dashed var(--line);
+  }
+  .receipt-head .event-name{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:15px;
+  }
+  .receipt-head .event-date{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .receipt-body{
+    padding:14px 18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    max-height:280px;
+    overflow-y:auto;
+  }
+  .receipt-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:5px 0;
+    gap:8px;
+  }
+  .receipt-line .l-name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .receipt-line .l-controls{display:flex; align-items:center; gap:6px;}
+  .step-btn{
+    width:20px; height:20px;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    line-height:1;
+    padding:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink);
+  }
+  .step-btn:hover{border-color:var(--matcha);}
+  .receipt-empty{
+    color:var(--ink-soft);
+    font-size:12px;
+    text-align:center;
+    padding:20px 0;
+  }
+  .receipt-total{
+    border-top:1px dashed var(--line);
+    padding:14px 18px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .receipt-total .row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .receipt-total .row.grand{
+    color:var(--ink);
+    font-size:16px;
+    font-weight:600;
+    margin-top:6px;
+  }
+  .receipt-actions{
+    padding:14px 18px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .receipt-actions button{width:100%;}
+  .payment-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:2px 0 2px;
+  }
+  .payment-select{
+    display:flex;
+    gap:6px;
+  }
+  .payment-btn{
+    flex:1;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-size:12.5px;
+    padding:9px 6px;
+  }
+  .payment-btn:hover{border-color:var(--matcha);}
+  .payment-btn.active{
+    background:var(--matcha-pale);
+    border-color:var(--matcha);
+    color:var(--matcha-dark);
+    font-weight:700;
+  }
+
+  .payment-breakdown{
+    display:flex;
+    gap:12px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+  .payment-stat{
+    flex:1;
+    min-width:110px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .payment-stat .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+  }
+  .payment-stat .value{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:17px;
+    font-weight:700;
+    margin-top:2px;
+    color:var(--matcha-dark);
+  }
+  .payment-stat .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:1px;
+  }
+
+  .torn-edge{
+    height:10px;
+    background:
+      linear-gradient(-45deg, var(--paper-dim) 6px, transparent 0),
+      linear-gradient(45deg, var(--paper-dim) 6px, transparent 0);
+    background-size:12px 12px;
+    background-position:bottom;
+    background-repeat:repeat-x;
+    margin-top:-1px;
+  }
+
+  .stats-strip{
+    display:flex;
+    gap:12px;
+    margin:16px 0;
+    flex-wrap:wrap;
+  }
+  .stat{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    flex:1;
+    min-width:120px;
+  }
+  .stat .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+  }
+  .stat .value{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:20px;
+    font-weight:700;
+    margin-top:3px;
+  }
+  .stat.matcha .value{color:var(--matcha-dark);}
+  .stat.clay .value{color:var(--clay);}
+
+  .log-panel{
+    margin-top:20px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:7px 8px;
+    border-bottom:1px solid var(--paper-dim);
+    font-family:'IBM Plex Mono', monospace;
+  }
+  tr:last-child td{border-bottom:none;}
+  .add-item-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--paper-dim);
+  }
+  .add-item-row input{
+    font-family:'DM Sans', sans-serif;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 9px;
+  }
+  .add-item-row input.name-input{flex:2; min-width:120px;}
+  .add-item-row input.num-input{width:80px;}
+
+  .toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:13px;
+    padding:10px 18px;
+    border-radius:8px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s, transform .2s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header>
+    <div class="brand">
+      <h1>NikyNapkins POS</h1>
+      <span class="tag" id="statusTag">no inventory loaded</span>
+    </div>
+    <div class="toolbar" id="headerToolbar" style="display:none;">
+      <input class="event-input" id="eventNameInput" placeholder="Event name" />
+      <label class="upload-label" style="margin:0; padding:9px 14px;">
+        Replace CSV
+        <input type="file" id="fileInputHeader" accept=".csv" style="display:none;">
+      </label>
+    </div>
+  </header>
+
+  <div id="emptyState" class="empty-state">
+    <h2>Load your inventory to start selling</h2>
+    <p>Upload the CSV for this event. NikyNapkins POS will auto-detect item name, price, and stock columns.</p>
+    <label class="upload-label">
+      Upload inventory CSV
+      <input type="file" id="fileInputMain" accept=".csv">
+    </label>
+    <div class="col-hint">expects columns like: item / name &nbsp;·&nbsp; price &nbsp;·&nbsp; qty / stock &nbsp;·&nbsp; category (optional)</div>
+  </div>
+
+  <div id="mainView" style="display:none;">
+
+    <div class="stats-strip">
+      <div class="stat"><div class="label">Items in stock</div><div class="value" id="statStock">0</div></div>
+      <div class="stat matcha"><div class="label">Units sold</div><div class="value" id="statSold">0</div></div>
+      <div class="stat clay"><div class="label">Revenue</div><div class="value" id="statRevenue">$0.00</div></div>
+    </div>
+
+    <div class="layout">
+      <div class="grid-panel">
+        <p class="panel-title">Tap an item to add it to the sale</p>
+        <div class="category-pills" id="categoryPills"></div>
+        <div class="item-grid" id="itemGrid"></div>
+
+        <div class="add-item-row">
+          <input class="name-input" id="newItemName" placeholder="Add item name">
+          <input class="num-input" id="newItemCategory" placeholder="Category">
+          <input class="num-input" id="newItemPrice" placeholder="Price" inputmode="decimal">
+          <input class="num-input" id="newItemQty" placeholder="Qty" inputmode="numeric">
+          <button class="btn-outline" id="addItemBtn">+ Add item</button>
+        </div>
+      </div>
+
+      <div class="receipt">
+        <div class="receipt-head">
+          <div class="event-name" id="receiptEventName">This Event</div>
+          <div class="event-date" id="receiptDate"></div>
+        </div>
+        <div class="receipt-body" id="receiptBody">
+          <div class="receipt-empty">Nothing in the cart yet</div>
+        </div>
+        <div class="receipt-total">
+          <div class="row"><span>Items</span><span id="cartItemCount">0</span></div>
+          <div class="row grand"><span>Total</span><span id="cartTotal">$0.00</span></div>
+        </div>
+        <div class="receipt-actions">
+          <p class="payment-label">Paid via</p>
+          <div class="payment-select" id="paymentSelect">
+            <button class="payment-btn" data-payment="Zelle">Zelle</button>
+            <button class="payment-btn" data-payment="Venmo">Venmo</button>
+            <button class="payment-btn" data-payment="Cash">Cash</button>
+            <button class="payment-btn" data-payment="Trade">Trade</button>
+          </div>
+          <button class="btn-primary" id="completeSaleBtn" disabled>Complete sale</button>
+          <button class="btn-clay" id="lockInBtn">Lock in &amp; export CSV</button>
+        </div>
+        <div class="torn-edge"></div>
+      </div>
+    </div>
+
+    <div class="log-panel">
+      <p class="panel-title">Sales log</p>
+      <table id="salesTable">
+        <thead><tr><th>Time</th><th>Item</th><th>Qty</th><th>Paid via</th><th>Line total</th></tr></thead>
+        <tbody id="salesTableBody"></tbody>
+      </table>
+      <div class="receipt-empty" id="salesEmptyMsg">No sales rung up yet</div>
+      <div class="payment-breakdown" id="paymentBreakdown"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  let inventory = [];      // {id, name, price, stock, category}
+  let cart = [];           // {id, name, price, qty}
+  let salesLog = [];       // {time, name, qty, lineTotal, payment}
+  let eventName = "";
+  let itemCounter = 0;
+  let categoryFilter = 'All';
+  let selectedPayment = null;
+  const PAYMENT_METHODS = ['Zelle','Venmo','Cash'];
+
+  const $ = id => document.getElementById(id);
+  const money = n => '$' + n.toFixed(2);
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  function parseMoney(val){
+    if(val === null || val === undefined) return 0;
+    const cleaned = String(val).replace(/[^0-9.\-]/g, '');
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function detectColumn(headers, candidates){
+    const lower = headers.map(h => h.toLowerCase().trim());
+    for(const c of candidates){
+      const idx = lower.findIndex(h => h.includes(c));
+      if(idx !== -1) return headers[idx];
+    }
+    return null;
+  }
+
+  function parseCSV(file){
+    Papa.parse(file, {
+      header:true,
+      skipEmptyLines:true,
+      complete: function(results){
+        const headers = results.meta.fields || [];
+        const nameCol = detectColumn(headers, ['item','name','product']);
+        const priceCol = detectColumn(headers, ['price','cost']);
+        const qtyCol = detectColumn(headers, ['qty','quantity','stock','inventory','count']);
+        const categoryCol = detectColumn(headers, ['category','type','collection','tag']);
+
+        if(!nameCol){
+          toast("Couldn't find a name/item column in that CSV");
+          return;
+        }
+
+        inventory = results.data
+          .filter(row => row[nameCol] && row[nameCol].trim() !== '')
+          .map(row => {
+            itemCounter++;
+            return {
+              id: 'item_' + itemCounter,
+              name: row[nameCol].trim(),
+              price: priceCol ? parseMoney(row[priceCol]) : 0,
+              stock: qtyCol ? (parseInt(String(row[qtyCol]).replace(/[^0-9.-]/g,''), 10) || 0) : 0,
+              category: categoryCol && row[categoryCol] ? row[categoryCol].trim() : 'Uncategorized'
+            };
+          });
+
+        cart = [];
+        salesLog = [];
+        categoryFilter = 'All';
+        $('emptyState').style.display = 'none';
+        $('mainView').style.display = 'block';
+        $('headerToolbar').style.display = 'flex';
+        $('statusTag').textContent = inventory.length + ' items loaded';
+        render();
+        toast('Inventory loaded — ' + inventory.length + ' items');
+      },
+      error: function(){
+        toast('Could not read that file as CSV');
+      }
+    });
+  }
+
+  function reservedQty(itemId){
+    const c = cart.find(c => c.id === itemId);
+    return c ? c.qty : 0;
+  }
+
+  function availableStock(item){
+    return item.stock - reservedQty(item.id);
+  }
+
+  function addToCart(itemId){
+    const item = inventory.find(i => i.id === itemId);
+    if(!item || availableStock(item) <= 0) return;
+    let c = cart.find(c => c.id === itemId);
+    if(c){ c.qty += 1; }
+    else { cart.push({id:item.id, name:item.name, price:item.price, qty:1}); }
+    render();
+  }
+
+  function changeCartQty(itemId, delta){
+    const c = cart.find(c => c.id === itemId);
+    if(!c) return;
+    const item = inventory.find(i => i.id === itemId);
+    if(delta > 0 && availableStock(item) <= 0) return;
+    c.qty += delta;
+    if(c.qty <= 0){
+      cart = cart.filter(x => x.id !== itemId);
+    }
+    render();
+  }
+
+  function completeSale(){
+    if(cart.length === 0 || !selectedPayment) return;
+    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    cart.forEach(c => {
+      const item = inventory.find(i => i.id === c.id);
+      if(item){ item.stock -= c.qty; }
+      salesLog.push({time, name:c.name, qty:c.qty, lineTotal:c.price * c.qty, payment:selectedPayment});
+    });
+    cart = [];
+    selectedPayment = null;
+    render();
+    toast('Sale complete');
+  }
+
+  function addManualItem(){
+    const name = $('newItemName').value.trim();
+    const category = $('newItemCategory').value.trim();
+    const price = parseFloat($('newItemPrice').value);
+    const qty = parseInt($('newItemQty').value, 10);
+    if(!name){ toast('Give the item a name first'); return; }
+    itemCounter++;
+    inventory.push({
+      id:'item_' + itemCounter,
+      name,
+      price: isNaN(price) ? 0 : price,
+      stock: isNaN(qty) ? 0 : qty,
+      category: category || 'Uncategorized'
+    });
+    $('newItemName').value = '';
+    $('newItemCategory').value = '';
+    $('newItemPrice').value = '';
+    $('newItemQty').value = '';
+    render();
+    toast('Added ' + name);
+  }
+
+  function exportCSV(){
+    const rows = [['item','category','price','qty_remaining']];
+    inventory.forEach(i => rows.push([i.name, i.category, i.price.toFixed(2), i.stock]));
+    const csv = rows.map(r => r.map(v => {
+      const s = String(v);
+      return s.includes(',') ? '"' + s + '"' : s;
+    }).join(',')).join('\n');
+
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:T]/g,'-').slice(0,16);
+    const safeEvent = (eventName || 'event').trim().replace(/[^a-z0-9]+/gi,'_');
+    a.href = url;
+    a.download = `${safeEvent}_inventory_locked_${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Locked in — CSV downloaded');
+  }
+
+  function startPriceEdit(priceEl, itemId){
+    const item = inventory.find(i => i.id === itemId);
+    if(!item) return;
+    const input = document.createElement('input');
+    input.className = 'price-input';
+    input.value = item.price.toFixed(2);
+    input.inputMode = 'decimal';
+    priceEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const commit = () => {
+      item.price = parseMoney(input.value);
+      render();
+    };
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if(e.key === 'Enter'){ input.blur(); }
+      if(e.key === 'Escape'){ render(); }
+    });
+  }
+
+  function render(){
+    // stats
+    const totalStock = inventory.reduce((s,i)=>s+Math.max(i.stock,0),0);
+    const totalSold = salesLog.reduce((s,l)=>s+l.qty,0);
+    const revenue = salesLog.reduce((s,l)=>s+l.lineTotal,0);
+    $('statStock').textContent = totalStock;
+    $('statSold').textContent = totalSold;
+    $('statRevenue').textContent = money(revenue);
+
+    // category pills
+    const categories = ['All', ...new Set(inventory.map(i => i.category))];
+    const pillsEl = $('categoryPills');
+    pillsEl.innerHTML = '';
+    if(categories.length > 2){
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'pill' + (cat === categoryFilter ? ' active' : '');
+        btn.textContent = cat;
+        btn.addEventListener('click', () => { categoryFilter = cat; render(); });
+        pillsEl.appendChild(btn);
+      });
+    }
+
+    // item grid
+    const grid = $('itemGrid');
+    grid.innerHTML = '';
+    const visibleItems = categoryFilter === 'All' ? inventory : inventory.filter(i => i.category === categoryFilter);
+    visibleItems.forEach(item => {
+      const avail = availableStock(item);
+      const inCart = reservedQty(item.id);
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.tabIndex = 0;
+      card.setAttribute('role','button');
+      if(avail <= 0) card.setAttribute('aria-disabled','true');
+      card.innerHTML = `
+        ${inCart > 0 ? `<span class="cart-badge">${inCart}</span>` : ''}
+        <span class="name">${escapeHtml(item.name)}</span>
+        <div class="meta">
+          <span class="price" data-id="${item.id}" title="Click to edit price">${money(item.price)}</span>
+          <span class="stock ${avail <= 3 ? 'low':''}">${avail} left</span>
+        </div>`;
+
+      card.addEventListener('click', () => { if(avail > 0) addToCart(item.id); });
+      card.addEventListener('keydown', e => {
+        if((e.key === 'Enter' || e.key === ' ') && avail > 0){ e.preventDefault(); addToCart(item.id); }
+      });
+
+      const priceEl = card.querySelector('.price');
+      priceEl.addEventListener('click', e => {
+        e.stopPropagation();
+        startPriceEdit(priceEl, item.id);
+      });
+
+      grid.appendChild(card);
+    });
+
+    // receipt
+    $('receiptEventName').textContent = eventName || 'This Event';
+    $('receiptDate').textContent = new Date().toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+
+    const body = $('receiptBody');
+    if(cart.length === 0){
+      body.innerHTML = '<div class="receipt-empty">Nothing in the cart yet</div>';
+    } else {
+      body.innerHTML = '';
+      cart.forEach(c => {
+        const line = document.createElement('div');
+        line.className = 'receipt-line';
+        line.innerHTML = `
+          <span class="l-name">${escapeHtml(c.name)}</span>
+          <div class="l-controls">
+            <button class="step-btn" data-action="dec" data-id="${c.id}">–</button>
+            <span>${c.qty}</span>
+            <button class="step-btn" data-action="inc" data-id="${c.id}">+</button>
+            <span style="min-width:52px; text-align:right;">${money(c.price*c.qty)}</span>
+          </div>`;
+        body.appendChild(line);
+      });
+      body.querySelectorAll('.step-btn').forEach(btn=>{
+        btn.addEventListener('click', () => {
+          changeCartQty(btn.dataset.id, btn.dataset.action === 'inc' ? 1 : -1);
+        });
+      });
+    }
+
+    const cartCount = cart.reduce((s,c)=>s+c.qty,0);
+    const cartTotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+    $('cartItemCount').textContent = cartCount;
+    $('cartTotal').textContent = money(cartTotal);
+
+    // payment method buttons
+    document.querySelectorAll('.payment-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.payment === selectedPayment);
+    });
+    $('completeSaleBtn').disabled = cart.length === 0 || !selectedPayment;
+
+    // sales log
+    const tbody = $('salesTableBody');
+    tbody.innerHTML = '';
+    if(salesLog.length === 0){
+      $('salesEmptyMsg').style.display = 'block';
+      $('salesTable').style.display = 'none';
+    } else {
+      $('salesEmptyMsg').style.display = 'none';
+      $('salesTable').style.display = 'table';
+      // most recent first
+      [...salesLog].reverse().forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${l.time}</td><td>${escapeHtml(l.name)}</td><td>${l.qty}</td><td>${escapeHtml(l.payment || '—')}</td><td>${money(l.lineTotal)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // payment breakdown
+    const breakdownEl = $('paymentBreakdown');
+    breakdownEl.innerHTML = '';
+    if(salesLog.length > 0){
+      PAYMENT_METHODS.forEach(method => {
+        const lines = salesLog.filter(l => l.payment === method);
+        const total = lines.reduce((s,l)=>s+l.lineTotal,0);
+        const div = document.createElement('div');
+        div.className = 'payment-stat';
+        div.innerHTML = `<div class="label">${method}</div><div class="value">${money(total)}</div><div class="count">${lines.length} sale${lines.length===1?'':'s'}</div>`;
+        breakdownEl.appendChild(div);
+      });
+    }
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // wiring
+  $('fileInputMain').addEventListener('change', e => { if(e.target.files[0]) parseCSV(e.target.files[0]); });
+  $('fileInputHeader').addEventListener('change', e => { if(e.target.files[0]) parseCSV(e.target.files[0]); });
+  $('eventNameInput').addEventListener('input', e => { eventName = e.target.value; render(); });
+  $('completeSaleBtn').addEventListener('click', completeSale);
+  $('lockInBtn').addEventListener('click', exportCSV);
+  $('addItemBtn').addEventListener('click', addManualItem);
+  document.querySelectorAll('.payment-btn').forEach(btn => {
+    btn.addEventListener('click', () => { selectedPayment = btn.dataset.payment; render(); });
+  });
+})();
+</script>
+</body>
+</html>
